@@ -242,7 +242,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
     
-    <ChatLayout>
+    <ChatLayout class="chat-layout-container">
       <template #conversation-list="{ selectedConversation: selectedChat, onSelectConversation }">
         <div class="new-chat-wrapper">
           <button class="new-chat-button" @click="createNewConversation">New Chat</button>
@@ -280,18 +280,32 @@ onBeforeUnmount(() => {
   padding: 0;
 }
 
-body {
+html, body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.6;
   color: #333;
   background-color: #f5f5f5;
-  height: 100vh;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 .app-container {
-  height: 100vh;
+  height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 .app-header {
@@ -301,6 +315,7 @@ body {
   padding: 10px 20px;
   background-color: #2196F3;
   color: white;
+  flex-shrink: 0;
 }
 
 .app-title {
@@ -342,5 +357,52 @@ body {
 
 .new-chat-button:hover {
   background-color: #388E3C;
+}
+
+.chat-layout-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  min-height: 0; /* Important for flex children to respect container size */
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    padding: 8px 15px;
+  }
+  
+  .app-title {
+    font-size: 1.2rem;
+  }
+  
+  .connection-status {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+  }
+  
+  .new-chat-wrapper {
+    padding: 10px;
+  }
+  
+  .new-chat-button {
+    padding: 8px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header {
+    padding: 6px 12px;
+  }
+  
+  .app-title {
+    font-size: 1.1rem;
+  }
+  
+  .connection-status {
+    font-size: 0.65rem;
+    padding: 3px 6px;
+  }
 }
 </style>

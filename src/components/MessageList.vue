@@ -170,6 +170,7 @@ const loadMoreMessages = () => {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 .empty-state {
@@ -254,6 +255,7 @@ const loadMoreMessages = () => {
   border-radius: 12px;
   padding: 10px 12px;
   position: relative;
+  word-break: break-word;
 }
 
 .own-message .message {
@@ -277,6 +279,7 @@ const loadMoreMessages = () => {
   font-size: 0.95rem;
   line-height: 1.4;
   word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .message-meta {
@@ -299,5 +302,33 @@ const loadMoreMessages = () => {
 
 .status-read {
   color: #2196F3;
+}
+
+@media (max-width: 768px) {
+  .message {
+    max-width: 85%;
+  }
+  
+  .date-text {
+    font-size: 0.7rem;
+  }
+  
+  .message-content {
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .message {
+    max-width: 90%;
+  }
+  
+  .messages-container {
+    padding: 5px;
+  }
+  
+  .date-separator {
+    margin: 10px 0;
+  }
 }
 </style>

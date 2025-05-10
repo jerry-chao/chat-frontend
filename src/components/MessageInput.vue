@@ -92,6 +92,7 @@ const handleKeydown = (event) => {
   border: 1px solid #e0e0e0;
   padding: 8px 12px;
   transition: border-color 0.2s;
+  width: 100%;
 }
 
 .message-input-container:focus-within {
@@ -113,6 +114,8 @@ const handleKeydown = (event) => {
   max-height: 120px;
   font-family: inherit;
   background: transparent;
+  min-width: 0;
+  width: 100%;
 }
 
 .message-textarea:focus {
@@ -152,5 +155,49 @@ const handleKeydown = (event) => {
 .send-button svg {
   width: 20px;
   height: 20px;
+}
+
+@media (max-width: 768px) {
+  .message-input-container {
+    padding: 6px 10px;
+  }
+  
+  .message-textarea {
+    padding: 6px;
+    font-size: 0.9rem;
+  }
+  
+  .send-button {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .send-button svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .message-input-container {
+    padding: 4px 8px;
+    border-radius: 18px;
+  }
+  
+  .message-textarea {
+    padding: 4px;
+    font-size: 0.85rem;
+  }
+  
+  .send-button {
+    width: 30px;
+    height: 30px;
+    margin-left: 6px;
+  }
+  
+  .send-button svg {
+    width: 16px;
+    height: 16px;
+  }
 }
 </style>

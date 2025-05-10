@@ -41,12 +41,14 @@ const selectConversation = (conversation) => {
 <style scoped>
 .chat-layout {
   display: flex;
-  height: 100vh;
+  height: 100%;
+  width: 100%;
   overflow: hidden;
 }
 
 .sidebar {
   width: 300px;
+  min-width: 250px;
   border-right: 1px solid #e0e0e0;
   display: flex;
   flex-direction: column;
@@ -67,6 +69,7 @@ const selectConversation = (conversation) => {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0; /* Allows content to shrink below min-content width */
 }
 
 .chat-header {
@@ -80,6 +83,8 @@ const selectConversation = (conversation) => {
   overflow-y: auto;
   padding: 20px;
   background-color: #f9f9f9;
+  display: flex;
+  flex-direction: column;
 }
 
 .chat-input {
@@ -101,7 +106,41 @@ h2 {
   
   .sidebar {
     width: 100%;
+    min-width: 100%;
     height: 30vh;
+    min-height: 200px;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .main-content {
+    height: 70vh;
+  }
+  
+  .chat-header {
+    padding: 10px 15px;
+  }
+  
+  .chat-messages {
+    padding: 10px 15px;
+  }
+  
+  .chat-input {
+    padding: 10px 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    height: 25vh;
+  }
+  
+  .main-content {
+    height: 75vh;
+  }
+  
+  h2 {
+    font-size: 1rem;
   }
 }
 </style>
