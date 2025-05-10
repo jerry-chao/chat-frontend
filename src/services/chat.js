@@ -17,8 +17,13 @@ class ChatService {
   initialize(endpoint, token, userId) {
     this.userId = userId;
     
+    if (!token) {
+      throw new Error('Authentication token is required');
+    }
+    
     // Create a new socket connection
-    this.socket = new Socket(endpoint, {
+    const socketUrl = endpoint.startsWith('http') ? endpoint : 'ws://127.0.0.1:4001/socket';
+    this.socket = new Socket(socketUrl, {
       params: { token },
       logger: (kind, msg, data) => {
         console.log(`${kind}: ${msg}`, data);
@@ -29,9 +34,19 @@ class ChatService {
     this.socket.connect();
     
     // Update connection state
-    this.socket.onOpen(() => this.callbacks.onConnectionStateChange('connected'));
-    this.socket.onClose(() => this.callbacks.onConnectionStateChange('disconnected'));
-    this.socket.onError(() => this.callbacks.onConnectionStateChange('error'));
+    this.socket.onOpen(() => {
+      console.log('Socket connection opened');
+      this.callbacks.onConnectionStateChange('connected');
+    });
+    this.socket.onClose(() => {
+      console.log('Socket connection closed');
+      this.callbacks.onConnectionStateChange('disconnected');
+    });
+    this.socket.onError((error) => {
+      console.error('Socket connection error:', error);
+      this.callbacks.onConnectionStateChange('error');
+      this.callbacks.onError(new Error('Socket connection failed'));
+    });
     
     return this;
   }
