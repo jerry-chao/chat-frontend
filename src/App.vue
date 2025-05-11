@@ -208,7 +208,7 @@ const selectConversation = (conversation) => {
         conversation.unreadCount = 0;
 
         // In a real app, you would join the Phoenix channel for this conversation
-        // chatService.joinConversation(conversation.id)
+        chatService.joinConversation(conversation.id)
     }
 };
 
@@ -234,10 +234,7 @@ const sendMessage = async (messageData) => {
         selectedConversation.value.lastMessageTime = tempMessage.timestamp;
 
         // In a real app, you would send via Phoenix
-        // await chatService.sendMessage(messageData.content)
-
-        // For demo, simulate successful send after a delay
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await chatService.sendMessage(tempMessage);
 
         // Update message status
         const messageIndex = selectedConversation.value.messages.findIndex(
@@ -286,7 +283,7 @@ onMounted(async () => {
 // Cleanup on unmount
 onBeforeUnmount(() => {
     // In a real app, disconnect from Phoenix
-    // chatService.disconnect()
+    chatService.disconnect();
 });
 </script>
 
