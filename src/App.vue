@@ -126,25 +126,28 @@ const authError = ref(null);
 
 // Authenticate with API
 const authenticateUser = async () => {
-  try {
-    authError.value = null;
-    const response = await authenticate("zhangchao@test.com", "SimbazhanG123");
-    token.value = response.token;
-    // Set token for future requests
-    setAuthToken(token.value);
-    return token.value;
-  } catch (error) {
-    console.error("Authentication failed:", error);
-    authError.value = error.message;
-    return null;
-  }
+    try {
+        authError.value = null;
+        const response = await authenticate(
+            "zhangchao@test.com",
+            "SimbazhanG123",
+        );
+        token.value = response.token;
+        // Set token for future requests
+        setAuthToken(token.value);
+        return token.value;
+    } catch (error) {
+        console.error("Authentication failed:", error);
+        authError.value = error.message;
+        return null;
+    }
 };
 
 // Initialize Phoenix connection
 const initializePhoenixConnection = async () => {
     // First authenticate to get token
     const authToken = await authenticateUser();
-    
+
     if (authToken) {
         // Connection would normally be established here
         // Using WebSocket endpoint from your Phoenix backend
@@ -201,6 +204,11 @@ const handleError = (error) => {
 
 // Select a conversation
 const selectConversation = (conversation) => {
+    // leave old conversation
+    if (selectedConversation.value) {
+        chatService.leaveConversation(selectedConversation.value.id);
+    }
+
     selectedConversation.value = conversation;
 
     // Reset unread count when selecting
@@ -208,7 +216,7 @@ const selectConversation = (conversation) => {
         conversation.unreadCount = 0;
 
         // In a real app, you would join the Phoenix channel for this conversation
-        chatService.joinConversation(conversation.id)
+        chatService.joinConversation(conversation.id);
     }
 };
 
@@ -292,14 +300,18 @@ onBeforeUnmount(() => {
         <div class="app-header">
             <h1 class="app-title">Chat App</h1>
             <div class="connection-status" :class="connectionStatus">
-                            <span v-if="connectionStatus === 'connected'">Connected</span>
-                            <span v-else-if="connectionStatus === 'connecting'">Connecting...</span>
-                            <span v-else-if="connectionStatus === 'error'">
-                                Connection Error
-                                <span v-if="authError" class="error-details">{{ authError }}</span>
-                            </span>
-                            <span v-else>Disconnected</span>
-                        </div>
+                <span v-if="connectionStatus === 'connected'">Connected</span>
+                <span v-else-if="connectionStatus === 'connecting'"
+                    >Connecting...</span
+                >
+                <span v-else-if="connectionStatus === 'error'">
+                    Connection Error
+                    <span v-if="authError" class="error-details">{{
+                        authError
+                    }}</span>
+                </span>
+                <span v-else>Disconnected</span>
+            </div>
         </div>
 
         <ChatLayout class="chat-layout-container">
@@ -419,9 +431,15 @@ body {
 }
 
 @keyframes pulse {
-    0% { opacity: 0.6; }
-    50% { opacity: 1; }
-    100% { opacity: 0.6; }
+    0% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.6;
+    }
 }
 
 .error-details {
