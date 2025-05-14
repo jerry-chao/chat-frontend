@@ -4,15 +4,17 @@ import ChatLayout from "./components/ChatLayout.vue";
 import ConversationList from "./components/ConversationList.vue";
 import MessageList from "./components/MessageList.vue";
 import MessageInput from "./components/MessageInput.vue";
+import LoginForm from "./components/LoginForm.vue";
 import chatService from "./services/chat.js";
 import { authenticate, setAuthToken } from "./services/api.js";
 
 // State management
 const conversations = ref([]);
 const selectedConversation = ref(null);
-const currentUserId = ref("zhagchao@test.com"); // Normally this would come from authentication
+const currentUserId = ref(""); // Will be set after login
 const connectionStatus = ref("disconnected");
 const loading = ref(false);
+const isAuthenticated = ref(false);
 
 // Mock data for demo purposes (remove in production)
 const generateMockData = () => {
@@ -124,17 +126,36 @@ const generateMockData = () => {
 const token = ref(null);
 const authError = ref(null);
 
-// Authenticate with API
+// Handle successful login
+const handleLoginSuccess = async (username, receivedToken) => {
+    token.value = receivedToken;
+    // Set token for future requests
+    setAuthToken(token.value);
+    // Set user ID (in a real app, you would decode the token or fetch user info)
+    currentUserId.value = username;
+    isAuthenticated.value = true;
+
+    // Initialize chat after authentication
+    await initializePhoenixConnection();
+
+    // Load mock data for demo
+    generateMockData();
+};
+
+// Handle login error
+const handleLoginError = (error) => {
+    authError.value = error;
+    connectionStatus.value = "error";
+};
+
+// Authenticate with API using credentials
 const authenticateUser = async () => {
     try {
         authError.value = null;
-        const response = await authenticate(
-            "zhangchao@test.com",
-            "SimbazhanG123",
-        );
-        token.value = response.token;
-        // Set token for future requests
-        setAuthToken(token.value);
+        if (!token.value) {
+            return null;
+        }
+        // Token is already set by the login handler
         return token.value;
     } catch (error) {
         console.error("Authentication failed:", error);
@@ -281,11 +302,8 @@ const createNewConversation = () => {
 
 // Initialize
 onMounted(async () => {
-    // Load mock data for demo
-    generateMockData();
-
-    // Initialize Phoenix connection
-    await initializePhoenixConnection();
+    // We'll wait for user login before initializing the chat
+    // Authentication will happen in the login form
 });
 
 // Cleanup on unmount
@@ -297,60 +315,73 @@ onBeforeUnmount(() => {
 
 <template>
     <div class="app-container">
-        <div class="app-header">
-            <h1 class="app-title">Chat App</h1>
-            <div class="connection-status" :class="connectionStatus">
-                <span v-if="connectionStatus === 'connected'">Connected</span>
-                <span v-else-if="connectionStatus === 'connecting'"
-                    >Connecting...</span
-                >
-                <span v-else-if="connectionStatus === 'error'">
-                    Connection Error
-                    <span v-if="authError" class="error-details">{{
-                        authError
-                    }}</span>
-                </span>
-                <span v-else>Disconnected</span>
-            </div>
-        </div>
+        <!-- Show login form if not authenticated -->
+        <LoginForm
+            v-if="!isAuthenticated"
+            @login-success="handleLoginSuccess"
+            @login-error="handleLoginError"
+        />
 
-        <ChatLayout class="chat-layout-container">
-            <template
-                #conversation-list="{
-                    selectedConversation: selectedChat,
-                    onSelectConversation,
-                }"
-            >
-                <div class="new-chat-wrapper">
-                    <button
-                        class="new-chat-button"
-                        @click="createNewConversation"
+        <!-- Show chat interface if authenticated -->
+        <div v-else>
+            <div class="app-header">
+                <h1 class="app-title">Chat App</h1>
+                <div class="user-info">{{ currentUserId }}</div>
+                <div class="connection-status" :class="connectionStatus">
+                    <span v-if="connectionStatus === 'connected'"
+                        >Connected</span
                     >
-                        New Chat
-                    </button>
+                    <span v-else-if="connectionStatus === 'connecting'"
+                        >Connecting...</span
+                    >
+                    <span v-else-if="connectionStatus === 'error'">
+                        Connection Error
+                        <span v-if="authError" class="error-details">{{
+                            authError
+                        }}</span>
+                    </span>
+                    <span v-else>Disconnected</span>
                 </div>
-                <ConversationList
-                    :conversations="conversations"
-                    :selectedConversation="selectedConversation"
-                    @select-conversation="selectConversation"
-                />
-            </template>
+            </div>
 
-            <template #message-list="{ conversation }">
-                <MessageList
-                    :conversation="selectedConversation"
-                    :currentUserId="currentUserId"
-                />
-            </template>
+            <ChatLayout class="chat-layout-container">
+                <template
+                    #conversation-list="{
+                        selectedConversation: selectedChat,
+                        onSelectConversation,
+                    }"
+                >
+                    <div class="new-chat-wrapper">
+                        <button
+                            class="new-chat-button"
+                            @click="createNewConversation"
+                        >
+                            New Chat
+                        </button>
+                    </div>
+                    <ConversationList
+                        :conversations="conversations"
+                        :selectedConversation="selectedConversation"
+                        @select-conversation="selectConversation"
+                    />
+                </template>
 
-            <template #message-input="{ conversation }">
-                <MessageInput
-                    :conversation="selectedConversation"
-                    :loading="loading"
-                    @send-message="sendMessage"
-                />
-            </template>
-        </ChatLayout>
+                <template #message-list="{ conversation }">
+                    <MessageList
+                        :conversation="selectedConversation"
+                        :currentUserId="currentUserId"
+                    />
+                </template>
+
+                <template #message-input="{ conversation }">
+                    <MessageInput
+                        :conversation="selectedConversation"
+                        :loading="loading"
+                        @send-message="sendMessage"
+                    />
+                </template>
+            </ChatLayout>
+        </div>
     </div>
 </template>
 
@@ -399,6 +430,13 @@ body {
     background-color: #2196f3;
     color: white;
     flex-shrink: 0;
+}
+
+.user-info {
+    font-size: 0.9rem;
+    padding: 5px 10px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
 }
 
 .app-title {
