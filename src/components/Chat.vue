@@ -7,14 +7,14 @@ import MessageInput from "./MessageInput.vue";
 import chatService from "../services/chat.js";
 
 const props = defineProps({
-  currentUserId: {
-    type: String,
-    required: true
-  },
-  token: {
-    type: String,
-    required: true
-  }
+    currentUserId: {
+        type: String,
+        required: true,
+    },
+    token: {
+        type: String,
+        required: true,
+    },
 });
 
 // State management
@@ -133,12 +133,26 @@ const generateMockData = () => {
 // Initialize Phoenix connection
 const initializePhoenixConnection = async () => {
     try {
+        console.log("Initializing Phoenix connection with token:", props.token ? "Valid token" : "No token");
+        connectionStatus.value = "connecting";
+        
+        // Add check for mock mode (for demo purposes)
+        if (!props.token || props.token === "demo") {
+            console.log("Using mock mode for demo");
+            connectionStatus.value = "connected";
+            return;
+        }
+        
         chatService
             .initialize("/socket", props.token, props.currentUserId)
             .onMessage(handleNewMessage)
             .onConnectionStateChange(handleConnectionChange)
             .onError(handleError);
 
+        // Wait for connection to establish
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        console.log("Socket initialized, connection status:", chatService.socket ? "Connected" : "Disconnected");
         connectionStatus.value = "connected";
     } catch (error) {
         console.error("Connection initialization failed:", error);
@@ -181,9 +195,12 @@ const handleError = (error) => {
 
 // Select a conversation
 const selectConversation = (conversation) => {
+    console.log("Selecting conversation:", conversation?.id);
+    
     // leave old conversation
     if (selectedConversation.value) {
-        chatService.leaveConversation(selectedConversation.value.id);
+        console.log("Leaving previous conversation:", selectedConversation.value.id);
+        chatService.leaveConversation();
     }
 
     selectedConversation.value = conversation;
@@ -193,7 +210,27 @@ const selectConversation = (conversation) => {
         conversation.unreadCount = 0;
 
         // In a real app, you would join the Phoenix channel for this conversation
-        chatService.joinConversation(conversation.id);
+        try {
+            console.log("Joining conversation:", conversation.id);
+            // Verify socket is connected before joining
+            if (!chatService.socket) {
+                console.error("Socket not connected. Cannot join conversation.");
+                throw new Error("Socket not connected");
+            }
+            
+            // Ensure we're properly joining the conversation before sending messages
+            setTimeout(() => {
+                try {
+                    chatService.joinConversation(conversation.id);
+                    console.log("Successfully joined conversation channel");
+                } catch (innerError) {
+                    console.error("Failed to join conversation (delayed):", innerError);
+                }
+            }, 500);
+        } catch (error) {
+            console.error("Failed to join conversation:", error);
+            authError.value = error.message;
+        }
     }
 };
 
@@ -202,39 +239,63 @@ const sendMessage = async (messageData) => {
     if (!selectedConversation.value) return;
 
     loading.value = true;
+    console.log("sendMessage called with:", messageData);
+    
+    // Create a temporary message
+    const tempMessage = {
+        id: `temp-${Date.now()}`,
+        content: messageData.content,
+        senderId: props.currentUserId,
+        senderName: "You",
+        timestamp: new Date().toISOString(),
+        status: "sending",
+    };
+
+    // Add to local state
+    selectedConversation.value.messages.push(tempMessage);
+    selectedConversation.value.lastMessageTime = tempMessage.timestamp;
 
     try {
-        // Create a temporary message
-        const tempMessage = {
-            id: `temp-${Date.now()}`,
-            content: messageData.content,
-            senderId: props.currentUserId,
-            senderName: "You",
-            timestamp: new Date().toISOString(),
-            status: "sending",
-        };
-
-        // Add to local state
-        selectedConversation.value.messages.push(tempMessage);
-        selectedConversation.value.lastMessageTime = tempMessage.timestamp;
-
         // In a real app, you would send via Phoenix
-        await chatService.sendMessage(tempMessage);
+        console.log("Sending message:", tempMessage);
+        
+        // Verify channel connection before sending
+        if (!chatService.channel) {
+            console.error("No active channel. Make sure you've joined a conversation.");
+            throw new Error("No active channel");
+        }
+        
+        // Send only the content, not the entire message object
+        console.log("Calling chatService.sendMessage with:", tempMessage.content);
+        const sendResult = await chatService.sendMessage(tempMessage.content);
+        console.log("sendResult:", sendResult);
 
-        // Update message status
+        // Update message status with the response data
+        const messageIndex = selectedConversation.value.messages.findIndex(
+            (m) => m.id === tempMessage.id,
+        );
+        if (messageIndex >= 0) {
+            console.log("Updating message status with sendResult:", sendResult);
+            selectedConversation.value.messages[messageIndex] = {
+                ...tempMessage,
+                id: sendResult?.id || `real-${Date.now()}`,
+                status: "sent",
+                serverResponse: sendResult // Store the complete server response
+            };
+        }
+    } catch (error) {
+        console.error("Failed to send message:", error);
+        // Update message status to show error
         const messageIndex = selectedConversation.value.messages.findIndex(
             (m) => m.id === tempMessage.id,
         );
         if (messageIndex >= 0) {
             selectedConversation.value.messages[messageIndex] = {
                 ...tempMessage,
-                id: `real-${Date.now()}`,
-                status: "sent",
+                status: "failed",
             };
         }
-    } catch (error) {
-        console.error("Failed to send message:", error);
-        // Implement error handling UI here
+        // Don't rethrow here so we can continue
     } finally {
         loading.value = false;
     }
@@ -258,11 +319,20 @@ const createNewConversation = () => {
 
 // Initialize
 onMounted(async () => {
-    // Initialize Phoenix connection
-    await initializePhoenixConnection();
-    
+    try {
+        // Initialize Phoenix connection
+        await initializePhoenixConnection();
+    } catch (error) {
+        console.error("Failed to initialize Phoenix connection:", error);
+    }
+
     // Load mock data for demo
     generateMockData();
+    
+    // For development debugging - Add error handler for unhandled promise rejections
+    window.addEventListener('unhandledrejection', (event) => {
+        console.error('Unhandled Promise Rejection:', event.reason);
+    });
 });
 
 // Cleanup on unmount
@@ -279,10 +349,14 @@ onBeforeUnmount(() => {
             <div class="user-info">{{ currentUserId }}</div>
             <div class="connection-status" :class="connectionStatus">
                 <span v-if="connectionStatus === 'connected'">Connected</span>
-                <span v-else-if="connectionStatus === 'connecting'">Connecting...</span>
+                <span v-else-if="connectionStatus === 'connecting'"
+                    >Connecting...</span
+                >
                 <span v-else-if="connectionStatus === 'error'">
                     Connection Error
-                    <span v-if="authError" class="error-details">{{ authError }}</span>
+                    <span v-if="authError" class="error-details">{{
+                        authError
+                    }}</span>
                 </span>
                 <span v-else>Disconnected</span>
             </div>
