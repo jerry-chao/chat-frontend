@@ -163,9 +163,10 @@ const initializePhoenixConnection = async () => {
 
 // Handle incoming messages
 const handleNewMessage = (payload) => {
+    console.log("received payload:", payload);
     if (!payload || !payload.message) return;
 
-    const { message, conversation_id } = payload;
+    const { message, topic: conversation_id } = payload;
     const convo = conversations.value.find((c) => c.id === conversation_id);
 
     if (convo) {
@@ -257,17 +258,7 @@ const sendMessage = async (messageData) => {
 
     try {
         // In a real app, you would send via Phoenix
-        console.log("Sending message:", tempMessage);
-        
-        // Verify channel connection before sending
-        if (!chatService.channel) {
-            console.error("No active channel. Make sure you've joined a conversation.");
-            throw new Error("No active channel");
-        }
-        
-        // Send only the content, not the entire message object
-        console.log("Calling chatService.sendMessage with:", tempMessage.content);
-        const sendResult = await chatService.sendMessage(tempMessage.content);
+        const sendResult = await chatService.sendMessage(tempMessage);
         console.log("sendResult:", sendResult);
 
         // Update message status with the response data
@@ -319,12 +310,17 @@ const createNewConversation = () => {
 
 // Initialize
 onMounted(async () => {
+<<<<<<< HEAD
     try {
         // Initialize Phoenix connection
         await initializePhoenixConnection();
     } catch (error) {
         console.error("Failed to initialize Phoenix connection:", error);
     }
+=======
+    // Initialize Phoenix connection
+    await initializePhoenixConnection();
+>>>>>>> b1bcc01 (modify chat front show the message received)
 
     // Load mock data for demo
     generateMockData();

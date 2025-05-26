@@ -101,8 +101,8 @@ class ChatService {
       conversationId,
     );
     // Join the new channel
-    this.channel = this.socket.channel(`room:${conversationId}`, {
-      user_id: this.userId,
+    this.channel = this.socket.channel(`${conversationId}`, {
+      user_id: this.userId
     });
 
     console.log(
