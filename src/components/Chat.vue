@@ -135,14 +135,14 @@ const initializePhoenixConnection = async () => {
     try {
         console.log("Initializing Phoenix connection with token:", props.token ? "Valid token" : "No token");
         connectionStatus.value = "connecting";
-        
+
         // Add check for mock mode (for demo purposes)
         if (!props.token || props.token === "demo") {
             console.log("Using mock mode for demo");
             connectionStatus.value = "connected";
             return;
         }
-        
+
         chatService
             .initialize("/socket", props.token, props.currentUserId)
             .onMessage(handleNewMessage)
@@ -151,7 +151,7 @@ const initializePhoenixConnection = async () => {
 
         // Wait for connection to establish
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         console.log("Socket initialized, connection status:", chatService.socket ? "Connected" : "Disconnected");
         connectionStatus.value = "connected";
     } catch (error) {
@@ -197,7 +197,7 @@ const handleError = (error) => {
 // Select a conversation
 const selectConversation = (conversation) => {
     console.log("Selecting conversation:", conversation?.id);
-    
+
     // leave old conversation
     if (selectedConversation.value) {
         console.log("Leaving previous conversation:", selectedConversation.value.id);
@@ -218,7 +218,7 @@ const selectConversation = (conversation) => {
                 console.error("Socket not connected. Cannot join conversation.");
                 throw new Error("Socket not connected");
             }
-            
+
             // Ensure we're properly joining the conversation before sending messages
             setTimeout(() => {
                 try {
@@ -241,7 +241,7 @@ const sendMessage = async (messageData) => {
 
     loading.value = true;
     console.log("sendMessage called with:", messageData);
-    
+
     // Create a temporary message
     const tempMessage = {
         id: `temp-${Date.now()}`,
@@ -310,21 +310,16 @@ const createNewConversation = () => {
 
 // Initialize
 onMounted(async () => {
-<<<<<<< HEAD
     try {
         // Initialize Phoenix connection
         await initializePhoenixConnection();
     } catch (error) {
         console.error("Failed to initialize Phoenix connection:", error);
     }
-=======
-    // Initialize Phoenix connection
-    await initializePhoenixConnection();
->>>>>>> b1bcc01 (modify chat front show the message received)
 
     // Load mock data for demo
     generateMockData();
-    
+
     // For development debugging - Add error handler for unhandled promise rejections
     window.addEventListener('unhandledrejection', (event) => {
         console.error('Unhandled Promise Rejection:', event.reason);
